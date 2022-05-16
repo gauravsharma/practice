@@ -4,7 +4,8 @@
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SparkSession, functions}
+import org.apache.spark.sql.functions.{array_contains, col, collect_list}
 
 object FindWordInColumns extends App {
   Logger.getLogger("org").setLevel(Level.ERROR)
@@ -23,16 +24,37 @@ object FindWordInColumns extends App {
     ("5","six,five,one","seven")
   ).toDF("id", "words", "word")
 
-  input.printSchema()
+//  input.printSchema()
   input.show(false)
 
   input.createOrReplaceTempView("sqlInp")
 
-  spark.sql(
+  val orgWords = spark.sql(
     """
-      SELECT id, word from sqlInp WHERE word IN (select (explode(split(words, ','))) FROM sqlInp)
-      """)
-    .show(false)
+        SELECT id, explode(split(words, ',')) as splitted_words, word FROM sqlInp
+      """).toDF()
+
+//  orgWords.show()
+
+  val sqlForOrgWords = orgWords.groupBy("splitted_words").agg(collect_list("id").as("collected_ids"))
+
+  sqlForOrgWords.createOrReplaceTempView("ft")
+
+  //below query gives the words which are repeating in other column
+//  val reqdWords = spark.sql(
+//    """
+//      SELECT distinct swt.word as dw FROM
+//      (SELECT id, explode(split(words, ',')) as splitted_words, word FROM sqlInp) swt
+//      WHERE swt.word IN (SELECT explode(split(words, ',')) FROM sqlInp)
+//      """).show(false)
+
+  val finalSql = spark.sql(
+    """
+      SELECT * FROM ft WHERE splitted_words IN (SELECT distinct swt.word as dw FROM
+            (SELECT id, explode(split(words, ',')) as splitted_words, word FROM sqlInp) swt
+            WHERE swt.word IN (SELECT explode(split(words, ',')) FROM sqlInp)) order by splitted_words
+      """
+  ).show(false)
 
   spark.stop()
 }
