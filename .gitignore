@@ -1,6 +1,6 @@
-/project/target/
-/null/
-/target/
-/.idea/
-/.bsp/
-/spark-warehouse/
+/project/target/*
+/null/*
+/target/*
+/.idea/*
+/.bsp/*
+/spark-warehouse/*

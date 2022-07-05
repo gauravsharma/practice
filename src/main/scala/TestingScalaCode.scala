@@ -16,9 +16,15 @@ object TestingScalaCode extends App {
   //  }
 
 
-  val array1 = Array.range(10, 60, 10)
+  var array1 = Array.range(10, 60, 10)
 
   // 50, 20, 30, 40, 10
+  val firstElement = array1(0)
+  val lastElement = array1(array1.length-1)
+
+  array1(0) = lastElement
+  array1(array1.length-1) = firstElement
+
   for (elem <- array1) {
     println(elem)
   }
